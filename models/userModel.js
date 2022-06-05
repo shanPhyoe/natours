@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema({
     passwordChangedAt: Date,
     passwordResetToken: String,
     passwordResetTokenExpires: Date,
+    active: {
+        type: Boolean,
+        default: true,
+        select: false,
+    },
 });
 
 userSchema.pre('save', async function (next) {
@@ -52,6 +57,13 @@ userSchema.pre('save', async function (next) {
 
     // removing passwordConfirm field so that it won't be saved in DB
     this.passwordConfirm = undefined;
+    next();
+});
+
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password') || this.isNew) return next();
+
+    this.passwordChangedAt = Date.now() - 1000;
     next();
 });
 
@@ -86,14 +98,20 @@ userSchema.methods.createPasswordResetToken = function () {
         .digest('hex');
 
     this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
-    console.log(
-        { resetToken },
-        this.passwordResetToken,
-        this.passwordResetTokenExpires
-    );
+    // console.log(
+    //     { resetToken },
+    //     this.passwordResetToken,
+    //     this.passwordResetTokenExpires
+    // );
 
     return resetToken;
 };
+
+userSchema.pre(/^find/, function (next) {
+    // "this" points to current querying object
+    this.find({ active: { $ne: false } });
+    next();
+});
 
 const User = mongoose.model('User', userSchema);
 
