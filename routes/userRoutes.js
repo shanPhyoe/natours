@@ -1,6 +1,7 @@
 const express = require('express');
 const {
     getAllUsers,
+    getMe,
     getUser,
     createUser,
     updateMe,
@@ -12,6 +13,7 @@ const {
     signup,
     login,
     protect,
+    allowOnlyTo,
     forgotPassword,
     resetPassword,
     updatePassword,
@@ -21,15 +23,19 @@ const userRouter = express.Router();
 
 userRouter.post('/signup', signup);
 userRouter.post('/login', login);
-
-userRouter.patch('/updatePassword', protect, updatePassword);
-userRouter.patch('/updateMe', protect, updateMe);
-userRouter.delete('/deleteMe', protect, deleteMe);
 userRouter.post('/forgotPassword', forgotPassword);
 userRouter.patch('/resetPassword/:token', resetPassword);
 
-userRouter.route('/').get(getAllUsers).post(createUser);
+userRouter.use(protect);
 
+userRouter.route('/me').get(getMe, getUser);
+userRouter.patch('/updateMe', updateMe);
+userRouter.delete('/deleteMe', deleteMe);
+userRouter.patch('/updatePassword', updatePassword);
+
+userRouter.use(allowOnlyTo('admin'));
+
+userRouter.route('/').get(getAllUsers).post(createUser);
 userRouter.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
 
 module.exports = userRouter;

@@ -1,4 +1,7 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
+
+// const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
     {
@@ -8,6 +11,7 @@ const tourSchema = new mongoose.Schema(
             unique: true,
             trim: true,
         },
+        slug: String,
         secretTour: {
             type: String,
             default: false,
@@ -33,6 +37,7 @@ const tourSchema = new mongoose.Schema(
             default: 4.5,
             min: [1, 'Rating average must be above or equal to 1'],
             max: [5, 'Rating average must be below or equal to 5'],
+            set: val => Math.round(val * 10) / 10,
         },
         ratingsQuantity: {
             type: Number,
@@ -96,6 +101,12 @@ const tourSchema = new mongoose.Schema(
                 description: String,
             },
         ],
+        guides: [
+            {
+                type: mongoose.Schema.ObjectId,
+                ref: 'User',
+            },
+        ],
     },
     {
         toJSON: { virtuals: true },
@@ -103,16 +114,32 @@ const tourSchema = new mongoose.Schema(
     }
 );
 
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+
+tourSchema.index({ startLocation: '2dsphere' });
+
+// Virtual populate
+tourSchema.virtual('reviews', {
+    ref: 'Review',
+    foreignField: 'tour',
+    localField: '_id',
+});
+
 tourSchema.virtual('durationInWeek').get(function () {
     return this.duration / 7;
 });
 
-// DOCUMENT MIDDLEWARE: pre will run before .save() and .create
+// DOCUMENT MIDDsLEWARE: pre will run before .save() and .create
 // "this" refers to processing document
 // ** must call next() to proceed to next middleware **
-// tourSchema.pre('save', function (next) {
-//     console.log('Document will be saved!');
-//     console.log(this);
+tourSchema.pre('save', function (next) {
+    this.slug = slugify(this.name, { lower: true });
+    next();
+});
+
+// tourSchema.pre('save', async function (next) {
+//     const guidesPromises = this.guides.map(async id => await User.findById(id));
+//     this.guides = await Promise.all(guidesPromises);
 //     next();
 // });
 
@@ -133,6 +160,14 @@ tourSchema.pre(/^find/, function (next) {
     next();
 });
 
+tourSchema.pre(/^find/, function (next) {
+    this.populate({
+        path: 'guides',
+        select: '-__v -passwordChangedAt',
+    });
+    next();
+});
+
 // QUERY MIDDLEWARE: post will run after find methods
 // docs refers to processed query
 // tourSchema.post(/^find/, function (docs, next) {
@@ -143,10 +178,10 @@ tourSchema.pre(/^find/, function (next) {
 
 // AGGREGATION MIDDLEWARE: pre will run before .aggregate()
 // this refers to aggregation object in which pipeline() exists
-tourSchema.pre('aggregate', function (next) {
-    this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-    next();
-});
+// tourSchema.pre('aggregate', function (next) {
+//     this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//     next();
+// });
 
 const Tour = mongoose.model('Tour', tourSchema);
 
