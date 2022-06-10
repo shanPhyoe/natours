@@ -68,6 +68,17 @@ exports.login = catchAsync(async function (req, res, next) {
     createAndSendToken(user, 200, res);
 });
 
+exports.logout = (req, res) => {
+    res.cookie('jwt', 'loggedout', {
+        expires: new Date(Date.now() + 3000),
+        httpOnly: true,
+    });
+
+    res.status(200).json({
+        status: 'success',
+    });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
     let token;
 
@@ -77,11 +88,16 @@ exports.protect = catchAsync(async (req, res, next) => {
         req.headers.authorization.startsWith('Bearer')
     ) {
         token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+        token = req.cookies.jwt;
     }
 
     if (!token)
         return next(
-            new AppError('You are not logged in. Please log in to get access.')
+            new AppError(
+                'You are not logged in. Please log in to get access.',
+                400
+            )
         );
 
     // TOKEN VERIFICATION
@@ -99,12 +115,39 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     // CHECK WHETHER USER CHANGED PASSWORD AFTER TOKEN IS ISSUED
     if (currentUser.tokenBeforeChangingPassword(decoded.iat))
-        next(new AppError('Session expired. Please log in again.'));
+        next(new AppError('Session expired. Please log in again.', 440));
 
     // GRANT ACCESS TO PROTECTED ROUTE
     req.user = currentUser;
+    res.locals.user = currentUser;
     next();
 });
+
+exports.isLoggedIn = async (req, res, next) => {
+    try {
+        if (req.cookies.jwt) {
+            // TOKEN VERIFICATION
+            const decoded = await jwt.verify(
+                req.cookies.jwt,
+                process.env.JWT_SECRET
+            );
+
+            // CHECK WHETHER USER IS DELETED OR NOT
+            const currentUser = await User.findById(decoded.id);
+            if (!currentUser) return next();
+
+            // CHECK WHETHER USER CHANGED PASSWORD AFTER TOKEN IS ISSUED
+            if (currentUser.tokenBeforeChangingPassword(decoded.iat))
+                return next();
+
+            // GRANT ACCESS TO PROTECTED ROUTE
+            res.locals.user = currentUser;
+        }
+        return next();
+    } catch (err) {
+        return next();
+    }
+};
 
 exports.allowOnlyTo = (...roles) => {
     return (req, res, next) => {

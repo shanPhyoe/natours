@@ -20,29 +20,47 @@ const handleValidationErrorDB = err => {
     return new AppError(message, 400);
 };
 
-const sendResDev = (err, res) => {
-    res.status(err.statusCode).json({
-        status: err.status,
+const sendResDev = (err, req, res) => {
+    if (req.originalUrl.startsWith('/api')) {
+        return res.status(err.statusCode).json({
+            status: err.status,
+            message: err.message,
+            stack: err.stack,
+            error: err,
+        });
+    }
+
+    return res.status(err.statusCode).render('error', {
+        title: 'Something went wrong!',
         message: err.message,
-        stack: err.stack,
-        error: err,
     });
 };
 
-const sendResProd = (err, res) => {
-    if (err.isOperational) {
-        res.status(err.statusCode).json({
-            status: err.status,
-            message: err.message,
-        });
-    } else {
-        console.error('Error:', err);
+const sendResProd = (err, req, res) => {
+    if (req.originalUrl.startsWith('/api')) {
+        if (err.isOperational) {
+            return res.status(err.statusCode).json({
+                status: err.status,
+                message: err.message,
+            });
+        }
 
-        res.status(500).json({
+        return res.status(err.statusCode).json({
             status: 'error',
-            message: 'Something went wrong!',
+            message: 'Something went very wrong!',
         });
     }
+    if (err.isOperational) {
+        return res.status(err.statusCode).render('error', {
+            title: 'Something went wrong!',
+            message: err.message,
+        });
+    }
+
+    return res.status(err.statusCode).render('error', {
+        title: 'Something went wrong!',
+        message: 'Please try again later.',
+    });
 };
 
 module.exports = (err, req, res, next) => {
@@ -50,15 +68,16 @@ module.exports = (err, req, res, next) => {
     err.status = err.status || 'error';
 
     if (process.env.NODE_ENV === 'development') {
-        sendResDev(err, res);
+        sendResDev(err, req, res);
     } else if (process.env.NODE_ENV === 'production') {
         let error = { ...err };
+        error.message = err.message;
 
         if (err.name === 'CastError') error = handleCastErrorDB(error);
         if (err.code === 11000) error = handleDuplicateFieldsErrorDB(error);
         if (err.name === 'ValidationError')
             error = handleValidationErrorDB(error);
 
-        sendResProd(error, res);
+        sendResProd(error, req, res);
     }
 };
