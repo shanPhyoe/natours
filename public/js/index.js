@@ -23,10 +23,16 @@ document.querySelector('.form--login')?.addEventListener('submit', e => {
 document.querySelector('.form-user-data')?.addEventListener('submit', e => {
     e.preventDefault();
 
-    const name = document.querySelector('#name').value;
-    const email = document.querySelector('#email').value;
+    const form = new FormData();
+    form.append('name', document.getElementById('name').value);
+    form.append('email', document.getElementById('email').value);
+    form.append('photo', document.getElementById('photo').files[0]);
 
-    updateSettings({ name, email }, 'data');
+    updateSettings(form, 'data');
+
+    window.setTimeout(() => {
+        location.reload(true);
+    }, 1000);
 });
 
 document

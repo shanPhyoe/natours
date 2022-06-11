@@ -11630,12 +11630,14 @@ if (document.querySelector('#map')) {
 });
 (_document$querySelect2 = document.querySelector('.form-user-data')) === null || _document$querySelect2 === void 0 ? void 0 : _document$querySelect2.addEventListener('submit', function (e) {
   e.preventDefault();
-  var name = document.querySelector('#name').value;
-  var email = document.querySelector('#email').value;
-  (0, _updateSettings.updateSettings)({
-    name: name,
-    email: email
-  }, 'data');
+  var form = new FormData();
+  form.append('name', document.getElementById('name').value);
+  form.append('email', document.getElementById('email').value);
+  form.append('photo', document.getElementById('photo').files[0]);
+  (0, _updateSettings.updateSettings)(form, 'data');
+  window.setTimeout(function () {
+    location.reload(true);
+  }, 1000);
 });
 (_document$querySelect3 = document.querySelector('.form-user-settings')) === null || _document$querySelect3 === void 0 ? void 0 : _document$querySelect3.addEventListener('submit', /*#__PURE__*/function () {
   var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(e) {
@@ -11703,7 +11705,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59948" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53307" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
