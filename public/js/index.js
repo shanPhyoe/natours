@@ -2,6 +2,7 @@ import '@babel/polyfill';
 import { login, logout } from './login';
 import { displayMap } from './mapBox';
 import { updateSettings } from './updateSettings';
+import { bookTour } from './stripe';
 
 if (document.querySelector('#map')) {
     const locations = JSON.parse(
@@ -61,3 +62,11 @@ document
     });
 
 document.querySelector('.nav__el--logout')?.addEventListener('click', logout);
+
+document.querySelector('#book-tour')?.addEventListener('click', async e => {
+    e.target.textContent = 'Processing...';
+
+    const { tourId } = e.target.dataset;
+
+    await bookTour(tourId);
+});
