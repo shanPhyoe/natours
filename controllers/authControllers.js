@@ -12,19 +12,16 @@ const signToken = id => {
     });
 };
 
-const createAndSendToken = (user, statusCode, res) => {
+const createAndSendToken = (user, statusCode, req, res) => {
     const token = signToken(user._id);
 
-    const cookieOptions = {
+    res.cookie('jwt', token, {
         expires: new Date(
             Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
         ),
         httpOnly: true,
-    };
-
-    if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-
-    res.cookie('jwt', token, cookieOptions);
+        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+    });
 
     res.status(statusCode).json({
         status: 'success',

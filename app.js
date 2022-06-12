@@ -6,11 +6,13 @@ const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const express = require('express');
 const compression = require('compression');
 
 const AppError = require('./utils/appError');
 const errorController = require('./controllers/errorController');
+const bookingController = require('./controllers/bookingControllers');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
@@ -19,10 +21,17 @@ const bookingRouter = require('./routes/bookingRoutes');
 
 const app = express();
 
+app.enable('trust proxy');
+
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
 // GLOBAL MIDDLEWARE
+// implementing cors
+app.use(cors());
+
+app.options('*', cors());
+
 // serving static files
 // app.use(express.static(`${__dirname}/public`));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -42,6 +51,12 @@ const limiter = rateLimit({
     message: 'Too many requests from this IP. Please try again in an hour!',
 });
 app.use('/api', limiter);
+
+app.post(
+    '/webhook-checkout',
+    express.raw({ type: 'application/json' }),
+    bookingController.webhookCheckout
+);
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));

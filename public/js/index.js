@@ -3,6 +3,7 @@ import { login, logout } from './login';
 import { displayMap } from './mapBox';
 import { updateSettings } from './updateSettings';
 import { bookTour } from './stripe';
+import { showAlert } from './alerts';
 
 if (document.querySelector('#map')) {
     const locations = JSON.parse(
@@ -70,3 +71,6 @@ document.querySelector('#book-tour')?.addEventListener('click', async e => {
 
     await bookTour(tourId);
 });
+
+const alertMessage = document.quertSelector('body').dataset.alert;
+if (alertMessage) showAlert('success', alertMessage, 15);
