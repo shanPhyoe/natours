@@ -46,7 +46,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 
     await new Email(newUser, url).sendWelcome();
 
-    createAndSendToken(newUser, 201, res);
+    createAndSendToken(newUser, 201, req, res);
 });
 
 exports.login = catchAsync(async function (req, res, next) {
@@ -66,7 +66,7 @@ exports.login = catchAsync(async function (req, res, next) {
         return next(new AppError('Incorrect email or password', 401));
 
     // response with token if everying is in order
-    createAndSendToken(user, 200, res);
+    createAndSendToken(user, 200, req, res);
 });
 
 exports.logout = (req, res) => {
@@ -235,7 +235,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     // *performed in pre"save"  hook on userSchema
 
     // LOG THE USER IN, SEND JWT
-    createAndSendToken(user, 200, res);
+    createAndSendToken(user, 200, req, res);
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
@@ -252,5 +252,5 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     await user.save();
 
     // LOG USER IN, SEND JWT
-    createAndSendToken(user, 200, res);
+    createAndSendToken(user, 200, req, res);
 });
